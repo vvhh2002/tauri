@@ -16,9 +16,17 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; media-src stream: http://stream.localhost",
+      "csp": {
+        "default-src": "'self' stream: asset:",
+        "connect-src": "ipc: http://ipc.localhost",
+        "font-src": "'self' stream: asset:",
+        "img-src": "'self' asset: http://asset.localhost blob: data: stream:",
+        "style-src": "'unsafe-inline' 'self' 'self' stream: asset:"
+      },
+
       "assetProtocol": {
-        "scope": ["**/streaming_example_test_video.mp4"]
+        "scope": ["**/streaming_example_test_video.mp4","**/*.png"
+        ]
       }
     }
   },

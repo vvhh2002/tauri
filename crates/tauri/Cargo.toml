@@ -249,3 +249,7 @@ path = "../../examples/streaming/main.rs"
 name = "isolation"
 path = "../../examples/isolation/main.rs"
 required-features = ["isolation"]
+
+
+[profile.dev.package.objc2]
+debug-assertions = false

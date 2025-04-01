@@ -20,12 +20,15 @@
       <source type="video/mp4" />
     </video>
 
+    <img src="stream://localhost/test/test.png" alt="test"/>
+
     <script>
       const { invoke, convertFileSrc } = window.__TAURI__.core
       const video = document.getElementById('video_source')
       const source = document.createElement('source')
       source.type = 'video/mp4'
       source.src = convertFileSrc('streaming_example_test_video.mp4', 'stream')
+      console.log(source.src)
       video.appendChild(source)
       video.load()
     </script>

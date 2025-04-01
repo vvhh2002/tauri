@@ -22,6 +22,7 @@ fn get_stream_response(
 
   // return error 404 if it's not our video
   if path != "streaming_example_test_video.mp4" {
+    println!("{}", path);
     return Ok(ResponseBuilder::new().status(404).body(Vec::new())?);
   }
 
@@ -166,7 +167,7 @@ fn download_video() {
   let video_file = PathBuf::from("streaming_example_test_video.mp4");
   if !video_file.exists() {
     let video_url =
-      "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+      "https://download.blender.org/peach/bigbuckbunny_movies/BigBuckBunny_320x180.mp4";
 
     // Downloading with curl this saves us from adding
     // a Rust HTTP client dependency.
@@ -188,7 +189,7 @@ fn download_video() {
 
 fn main() {
   download_video();
-
+  println!("Begin");
   tauri::Builder::default()
     .register_asynchronous_uri_scheme_protocol("stream", move |_ctx, request, responder| {
       match get_stream_response(request) {
