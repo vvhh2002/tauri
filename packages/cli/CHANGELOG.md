@@ -1,5 +1,15 @@
 # Changelog
 
+## \[2.5.0]
+
+### Enhancements
+
+- [`f805061d1`](https://www.github.com/tauri-apps/tauri/commit/f805061d1152bc4790dbdb9475a506afcdd1de75) ([#13079](https://www.github.com/tauri-apps/tauri/pull/13079) by [@Pietagorh](https://www.github.com/tauri-apps/tauri/../../Pietagorh)) Add support for passing TOML and JSON5 config files to `--config` arg
+
+### Dependencies
+
+- Upgraded to `tauri-cli@2.5.0`
+
 ## \[2.4.0]
 
 ### New Features
