@@ -4,13 +4,73 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use http::{header::*, response::Builder as ResponseBuilder, status::StatusCode};
+use http::{header::*, Response,response::Builder as ResponseBuilder, status::StatusCode};
 use http_range::HttpRange;
+use http_body_util::{StreamBody};
 use std::{
   io::{Read, Seek, SeekFrom, Write},
   path::PathBuf,
   process::{Command, Stdio},
 };
+use tokio::fs::File;
+use tokio_stream::StreamExt;
+use tokio_util::io::ReaderStream;
+// use bytes::Bytes;
+// use futures_util::TryStreamExt;
+static NOTFOUND: &[u8] = b"Not Found";
+//https://github.com/hyperium/hyper/blob/master/Cargo.toml
+/// HTTP status code 404
+fn not_found() -> Response<Vec<u8>> {
+  Response::builder()
+      .status(StatusCode::NOT_FOUND)
+      // .body(NOTFOUND.into()).map_err(|e| match e {}).into())
+      .body(NOTFOUND.into())
+      .unwrap()
+}
+// async fn simple_file_send(filename: &str) -> Result<Response<BoxBody<Bytes, std::io::Error>>, Box<dyn std::error::Error>> {
+
+async fn simple_file_send(filename: &str) -> Result<Response<Vec<u8>>, Box<dyn std::error::Error>> {
+  // Open file for reading
+  let file = File::open(filename).await;
+  if file.is_err() {
+    eprintln!("ERROR: Unable to open file.");
+    return Ok(not_found());
+  }
+
+  let file: File = file.unwrap();
+
+  // Wrap to a tokio_util::io::ReaderStream
+  let mut reader_stream = ReaderStream::new(file);
+  // Read all of the chunks into a vector.
+  let mut stream_contents = Vec::new();
+  while let Some(chunk) = reader_stream.next().await {
+    stream_contents.extend_from_slice(&chunk?);
+  }
+
+  // Send response
+  let response = Response::builder()
+      .status(StatusCode::OK)
+      .body(stream_contents)
+      .unwrap();
+
+  Ok(response)
+}
+async fn get_stream_response_file(
+  request: http::Request<Vec<u8>>,
+) -> Result<http::Response<Vec<u8>>, Box<dyn std::error::Error>> {
+  // skip leading `/`
+  let path =format!("{}/{}", "./examples/.icons", percent_encoding::percent_decode(request.uri().path()[1..].as_bytes())
+      .decode_utf8_lossy()
+      .to_string());
+
+  // return error 404 if it's not our video
+  if std::fs::exists(&path).is_err(){
+    println!("{} error", path);
+    return Ok(ResponseBuilder::new().status(404).body(Vec::new())?);
+  }
+  println!("try open {} ", path);
+ simple_file_send(&path).await
+}
 
 fn get_stream_response(
   request: http::Request<Vec<u8>>,
@@ -203,6 +263,18 @@ fn main() {
         ),
       }
     })
+      .register_asynchronous_uri_scheme_protocol("asset", move |_ctx, request, responder| {
+        match tauri::async_runtime::block_on( get_stream_response_file(request)) {
+          Ok(http_response) => responder.respond(http_response),
+          Err(e) => responder.respond(
+            ResponseBuilder::new()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .header(CONTENT_TYPE, "image/png")
+                .body(e.to_string().as_bytes().to_vec())
+                .unwrap(),
+          ),
+        }
+      })
     .run(tauri::generate_context!(
       "../../examples/streaming/tauri.conf.json"
     ))
